@@ -1,4 +1,11 @@
-export default async function handler(req, res) {
+const OpenAI = require('openai');
+
+const nvidiaClient = new OpenAI({
+  apiKey: process.env.NVIDIA_API_KEY,
+  baseURL: 'https://integrate.api.nvidia.com/v1',
+});
+
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -18,11 +25,6 @@ export default async function handler(req, res) {
 
   try {
     const { mensaje, historial } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-      return res.status(500).json({ error: 'Falta configurar la GEMINI_API_KEY en Vercel' });
-    }
 
     const systemPrompt = `
       Eres el asistente virtual oficial de "Gomería a Domicilio y Auxilio Mecánico" (especializado en motos y vehículos).
@@ -43,47 +45,25 @@ export default async function handler(req, res) {
       3. Si necesitan contratar el servicio, aliéntalos a llamar o escribir a los números de contacto (096643887 o 098866160).
     `;
 
-    // Estructura simplificada y compatible con la API de Gemini
-    let contents = [];
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...(historial || []),
+      { role: "user", content: mensaje }
+    ];
 
-    if (historial && Array.isArray(historial)) {
-      historial.forEach((item) => {
-        contents.push({
-          role: item.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: item.content }]
-        });
-      });
-    }
-
-    contents.push({
-      role: 'user',
-      parts: [{ text: `${systemPrompt}\n\nCliente: ${mensaje}` }]
+    const completion = await nvidiaClient.chat.completions.create({
+      model: "meta/llama-3.3-70b-instruct",
+      messages: messages,
+      temperature: 0.7,
+      max_tokens: 512,
     });
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ contents }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("Error en Gemini API:", data);
-      throw new Error(data.error?.message || "Error al comunicarse con la API de Gemini");
-    }
-
-    const respuestaIA = data.candidates?.[0]?.content?.parts?.[0]?.text || "No pude procesar una respuesta.";
+    const respuestaIA = completion.choices[0].message.content;
 
     return res.status(200).json({ respuesta: respuestaIA });
 
   } catch (error) {
-    console.error("Error en la función handler:", error);
-    return res.status(500).json({ error: "Error interno procesando la solicitud." });
+    console.error("Error en la API de NVIDIA:", error);
+    return res.status(500).json({ error: "Hubo un error procesando tu solicitud con la IA." });
   }
-}
+};
