@@ -1,69 +1,44 @@
-const BACKEND_URL = 'https://gomer-a-a-domicilio-6igb.vercel.app/api/chat';
+document.addEventListener('DOMContentLoaded', () => {
+    const checkboxes = document.querySelectorAll('input[name="service"]');
+    const totalAmount = document.getElementById('total-amount');
+    const btnWhatsApp = document.getElementById('btn-whatsapp');
 
-const chatMessages = document.getElementById('chat-messages');
-const userInput = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
+    const PHONE_NUMBER = "59896643887"; // Número para WhatsApp (formato internacional sin +)
 
-let conversationHistory = [];
+    function updateTotal() {
+        let total = 0;
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                total += parseInt(cb.value);
+            }
+        });
+        totalAmount.textContent = `$${total}`;
+    }
 
-function appendMessage(text, sender, isLoading = false) {
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message', sender);
-    if (isLoading) messageDiv.classList.add('loading');
-    messageDiv.textContent = text;
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-    return messageDiv;
-}
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateTotal);
+    });
 
-async function handleSendMessage() {
-    const text = userInput.value.trim();
-    if (!text) return;
+    btnWhatsApp.addEventListener('click', () => {
+        const selectedServices = [];
+        let total = 0;
 
-    appendMessage(text, 'user');
-    userInput.value = '';
-
-    userInput.disabled = true;
-    sendBtn.disabled = true;
-
-    const loadingMessageDiv = appendMessage('Escribiendo...', 'bot', true);
-
-    try {
-        const response = await fetch(BACKEND_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                mensaje: text,
-                historial: conversationHistory
-            })
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                selectedServices.push(cb.getAttribute('data-name'));
+                total += parseInt(cb.value);
+            }
         });
 
-        const data = await response.json();
-
-        if (response.ok && data.respuesta) {
-            loadingMessageDiv.textContent = data.respuesta;
-            loadingMessageDiv.classList.remove('loading');
-
-            conversationHistory.push({ role: 'user', content: text });
-            conversationHistory.push({ role: 'assistant', content: data.respuesta });
+        let text = "";
+        if (selectedServices.length === 0) {
+            text = "¡Hola! Quisiera realizar una consulta sobre los servicios de gomería a domicilio.";
         } else {
-            throw new Error(data.error || 'Error en la respuesta del servidor');
+            text = `¡Hola! Necesito solicitar los siguientes servicios a domicilio:\n- ${selectedServices.join('\n- ')}\n\nTotal estimado: $${total}\n\n¿Tienen disponibilidad ahora?`;
         }
 
-    } catch (error) {
-        console.error('Error:', error);
-        loadingMessageDiv.textContent = 'Ocurrió un error al conectar con la IA. Intenta nuevamente.';
-        loadingMessageDiv.classList.remove('loading');
-    } finally {
-        userInput.disabled = false;
-        sendBtn.disabled = false;
-        userInput.focus();
-    }
-}
-
-sendBtn.addEventListener('click', handleSendMessage);
-userInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleSendMessage();
+        const encodedText = encodeURIComponent(text);
+        const whatsappUrl = `https://wa.me/${PHONE_NUMBER}?text=${encodedText}`;
+        window.open(whatsappUrl, '_blank');
+    });
 });
