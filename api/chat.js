@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      return res.status(500).json({ error: 'Falta la API Key de Gemini en el servidor' });
+      return res.status(500).json({ error: 'Falta configurar la GEMINI_API_KEY en Vercel' });
     }
 
     const systemPrompt = `
@@ -43,16 +43,8 @@ export default async function handler(req, res) {
       3. Si necesitan contratar el servicio, aliéntalos a llamar o escribir a los números de contacto (096643887 o 098866160).
     `;
 
-    const contents = [
-      {
-        role: 'user',
-        parts: [{ text: systemPrompt }]
-      },
-      {
-        role: 'model',
-        parts: [{ text: 'Entendido. Asumiré el rol de asistente de Gomería a Domicilio con toda la información y reglas proporcionadas.' }]
-      }
-    ];
+    // Estructura simplificada y compatible con la API de Gemini
+    let contents = [];
 
     if (historial && Array.isArray(historial)) {
       historial.forEach((item) => {
@@ -65,11 +57,11 @@ export default async function handler(req, res) {
 
     contents.push({
       role: 'user',
-      parts: [{ text: mensaje }]
+      parts: [{ text: `${systemPrompt}\n\nCliente: ${mensaje}` }]
     });
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
@@ -92,6 +84,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error("Error en la función handler:", error);
-    return res.status(500).json({ error: "Hubo un error procesando tu solicitud con la IA." });
+    return res.status(500).json({ error: "Error interno procesando la solicitud." });
   }
 }
