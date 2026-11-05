@@ -1,11 +1,4 @@
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export default async function handler(req, res) {
-  // Permitir CORS para que tu web en GitHub Pages pueda hablar con Vercel
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -25,8 +18,12 @@ export default async function handler(req, res) {
 
   try {
     const { mensaje, historial } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
 
-    // Prompt del Sistema con la información exacta del servicio
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Falta la API Key de Gemini en el servidor' });
+    }
+
     const systemPrompt = `
       Eres el asistente virtual oficial de "Gomería a Domicilio y Auxilio Mecánico" (especializado en motos y vehículos).
       Tu tono debe ser amigable, servicial, directo y enfocado en ayudar al cliente rápidamente.
@@ -46,24 +43,55 @@ export default async function handler(req, res) {
       3. Si necesitan contratar el servicio, aliéntalos a llamar o escribir a los números de contacto (096643887 o 098866160).
     `;
 
-    const messages = [
-      { role: "system", content: systemPrompt },
-      ...(historial || []),
-      { role: "user", content: mensaje }
+    const contents = [
+      {
+        role: 'user',
+        parts: [{ text: systemPrompt }]
+      },
+      {
+        role: 'model',
+        parts: [{ text: 'Entendido. Asumiré el rol de asistente de Gomería a Domicilio con toda la información y reglas proporcionadas.' }]
+      }
     ];
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: messages,
-      temperature: 0.7,
+    if (historial && Array.isArray(historial)) {
+      historial.forEach((item) => {
+        contents.push({
+          role: item.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: item.content }]
+        });
+      });
+    }
+
+    contents.push({
+      role: 'user',
+      parts: [{ text: mensaje }]
     });
 
-    const respuestaIA = completion.choices[0].message.content;
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ contents }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Error en Gemini API:", data);
+      throw new Error(data.error?.message || "Error al comunicarse con la API de Gemini");
+    }
+
+    const respuestaIA = data.candidates?.[0]?.content?.parts?.[0]?.text || "No pude procesar una respuesta.";
 
     return res.status(200).json({ respuesta: respuestaIA });
 
   } catch (error) {
-    console.error("Error en la API:", error);
-    return res.status(500).json({ error: "Hubo un error procesando tu solicitud." });
+    console.error("Error en la función handler:", error);
+    return res.status(500).json({ error: "Hubo un error procesando tu solicitud con la IA." });
   }
 }
