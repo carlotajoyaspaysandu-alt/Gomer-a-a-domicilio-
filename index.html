@@ -3,28 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gomería a Domicilio - Asistente IA</title>
+    <title>Gomería a Domicilio y Auxilio Mecánico</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <h2>Gomería & Mecánica IA</h2>
-            <span class="status-dot"></span>
-        </div>
-        
-        <div id="chat-messages" class="chat-messages">
-            <div class="message bot">
-                ¡Hola! Soy tu asistente virtual de Gomería a Domicilio y Auxilio Mecánico. ¿En qué te puedo ayudar hoy?
+    <div class="app-container">
+        <!-- Encabezado con marca e información rápida -->
+        <header class="app-header">
+            <h1>Gomería a Domicilio</h1>
+            <p>Auxilio Mecánico en Paysandú</p>
+            <div class="schedule-badge">
+                <span>🕒 Lun a Sáb: 09:00 - 19:00 hs</span>
             </div>
-        </div>
+        </header>
 
-        <div class="chat-input-area">
-            <input type="text" id="user-input" placeholder="Escribe tu consulta..." autocomplete="off">
-            <button id="send-btn">
-                <span>Enviar</span>
-            </button>
-        </div>
+        <!-- Selector de Servicios -->
+        <main class="services-container">
+            <h2>Selecciona el servicio que necesitas:</h2>
+            
+            <form id="service-form">
+                <label class="service-card">
+                    <input type="checkbox" name="service" value="200" data-name="Reparación de Pinchadura">
+                    <div class="service-info">
+                        <span class="service-title">🔧 Pinchadura</span>
+                        <span class="service-desc">Reparación a domicilio / auxilio</span>
+                    </div>
+                    <span class="service-price">$200</span>
+                </label>
+
+                <label class="service-card">
+                    <input type="checkbox" name="service" value="180" data-name="Cambio de Aceite">
+                    <div class="service-info">
+                        <span class="service-title">🛢️ Cambio de Aceite</span>
+                        <span class="service-desc">Mantenimiento rápido de motor</span>
+                    </div>
+                    <span class="service-price">$180</span>
+                </label>
+
+                <label class="service-card">
+                    <input type="checkbox" name="service" value="300" data-name="Cambio de Transmisión">
+                    <div class="service-info">
+                        <span class="service-title">⚙️ Cambio de Transmisión</span>
+                        <span class="service-desc">Reemplazo de kit de transmisión</span>
+                    </div>
+                    <span class="service-price">$300</span>
+                </label>
+
+                <!-- Resumen y Total -->
+                <div class="total-box">
+                    <span>Total estimado:</span>
+                    <strong id="total-amount">$0</strong>
+                </div>
+
+                <p class="night-note">⚠️ <em>Fuera de horario regular o urgencias nocturnas tienen un recargo adicional.</em></p>
+
+                <!-- Botones de Acción Directa -->
+                <div class="action-buttons">
+                    <button type="button" id="btn-whatsapp" class="btn btn-whatsapp">
+                        💬 Pedir por WhatsApp
+                    </button>
+                    <a href="tel:096643887" class="btn btn-call">
+                        📞 Llamar Ahora (096 643 887)
+                    </a>
+                </div>
+            </form>
+        </main>
     </div>
 
     <script src="app.js"></script>
